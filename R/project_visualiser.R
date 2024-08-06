@@ -438,6 +438,7 @@ plotNetwork <- function(df_edges,
         "<i class='fa-solid fa-robot' ",
         "title='Request AI summary' ",
         "aria-hidden='true' style='cursor:pointer; color: #337ab7;' id='",
+        # calls aiAssist function
         paste0("aiAssist_", df_node_info$label[index]),
         "' onclick=\"aiAssist('", df_node_info$label[index],
         "');\"></i>",
@@ -1000,6 +1001,7 @@ define_app_server <- function(network_object, project_path) {
     # Render the network visual
     output$networkPlot <- visNetwork::renderVisNetwork(network_object)
 
+    # AI stuff -----------------------------------------------------------------
     # Observer to handle AI response in a new tab within the shiny app
     shiny::observeEvent(
       ignoreNULL = TRUE,
@@ -1015,11 +1017,39 @@ define_app_server <- function(network_object, project_path) {
         }
 
         if(input$aiAssist != "") {
+
           function_name <- input$aiAssist
           tab_name <- paste(function_name)
 
+          # Set the ID of the new tab to be the current one
+          currentTabId("ai_options")
+
+          output[["ai_options"]] <- shiny::renderUI({
+            shiny::HTML("Choose an option for your LLM output")
+          })
+
+          # Dynamically adjust column widths
+          shinyjs::runjs(
+            '$("#mainColumn").removeClass("col-sm-11").addClass("col-sm-6");'
+          )
+          shinyjs::runjs(
+            '$("#tabColumn").removeClass("col-sm-1").addClass("col-sm-6");'
+          )
+
+          # Insert the new tab and set it to the current
+          shiny::insertTab(
+            inputId = "fileTabs",
+            make_closable_tab(
+              tab_name = paste("AI summary"),
+              content_output_Id = "ai_options",
+              output_type = "HTML"
+            ),
+            select = TRUE
+          )
+
           # Check if the function name refers to an existing function
-          if (is.function(get(x = function_name))) {
+          if (FALSE) {
+          #if (is.function(get(x = function_name))) {
             # Check if the number of calls did not exceed a maximum:
             if(aiAssit_calls() < 5) {
               # Waiter
@@ -1108,6 +1138,7 @@ define_app_server <- function(network_object, project_path) {
       }
     )
 
+    # Open file in RStudio -----------------------------------------------------
     # Observer to handle opening files in RStudio
     shiny::observeEvent(
       ignoreNULL = TRUE,
@@ -1138,6 +1169,7 @@ define_app_server <- function(network_object, project_path) {
       }
     )
 
+    # Open file in new tab -----------------------------------------------------
     # Observer to handle opening files in a new tab within the shiny app
     shiny::observeEvent(
       ignoreNULL = TRUE,
